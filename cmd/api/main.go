@@ -2,13 +2,12 @@ package main
 
 import (
 	"log"
-	"net/http"
 
+	"omniforge-api/internal/app"
 	"omniforge-api/internal/config"
 	"omniforge-api/internal/database"
+	"omniforge-api/internal/router"
 	"omniforge-api/internal/seed"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -31,17 +30,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer sqlDB.Close()
+	dependencies := app.NewDependencies(db, cfg)
 
-	router := gin.Default()
+	appRouter := router.New(dependencies)
 
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message":     "OmniForge API is running",
-			"environment": cfg.AppEnv,
-		})
-	})
-
-	if err := router.Run(":" + cfg.AppPort); err != nil {
+	if err := appRouter.Run(":" + cfg.AppPort); err != nil {
 		log.Fatal(err)
 	}
 }
