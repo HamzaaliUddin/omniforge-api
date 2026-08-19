@@ -6,6 +6,7 @@ import (
 
 	"omniforge-api/internal/config"
 	"omniforge-api/internal/database"
+	"omniforge-api/internal/seed"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Database connection failed:", err)
 	}
+	log.Println("Database connected successfully")
+
+	if err := seed.Run(db); err != nil {
+		log.Fatal("Seeding failed: ", err)
+	}
+
+	log.Println("Database seeded successfully")
 
 	sqlDB, err := db.DB()
 	if err != nil {
