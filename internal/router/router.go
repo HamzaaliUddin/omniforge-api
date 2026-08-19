@@ -6,39 +6,47 @@ import (
 	"omniforge-api/internal/auth"
 	"omniforge-api/internal/middleware"
 	"omniforge-api/internal/user"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func New(dependencies *app.Dependencies) *gin.Engine {
+func New(deps *app.Dependencies) *gin.Engine {
 	router := gin.Default()
 
 	api := router.Group("/api/v1")
+	api.Use(
+		middleware.RateLimit(
+			deps.Redis,
+			100,
+			time.Minute,
+		),
+	)
 
 	auth.RegisterRoutes(
 		api,
-		dependencies.AuthHandler,
+		deps.AuthHandler,
 	)
 
 	protectedRoutes := api.Group("")
 	protectedRoutes.Use(
-		middleware.Auth(dependencies.JWTSecret),
+		middleware.Auth(deps.JWTSecret),
 	)
 
 	user.RegisterRoutes(
 		protectedRoutes,
-		dependencies.UserHandler,
+		deps.UserHandler,
 	)
 
 	adminRoutes := api.Group("/admin")
 	adminRoutes.Use(
-		middleware.Auth(dependencies.JWTSecret),
+		middleware.Auth(deps.JWTSecret),
 		middleware.RequireRole("admin"),
 	)
 
 	admin.RegisterRoutes(
 		adminRoutes,
-		dependencies.AdminHandler,
+		deps.AdminHandler,
 	)
 
 	return router
