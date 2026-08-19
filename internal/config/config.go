@@ -11,7 +11,8 @@ type Config struct {
 	AppPort     string
 	AppEnv      string
 	DatabaseURL string
-	JWTSecret string
+	JWTSecret   string
+	RedisAddr   string
 }
 
 func Load() *Config {
@@ -24,5 +25,6 @@ func Load() *Config {
 	AppEnv:      os.Getenv("APP_ENV"),
 	DatabaseURL: os.Getenv("DATABASE_URL"),
 	JWTSecret:   os.Getenv("JWT_SECRET"),
+	RedisAddr:   os.Getenv("REDIS_ADDR"),
 }
 }

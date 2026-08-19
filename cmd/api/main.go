@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"omniforge-api/internal/app"
+	"omniforge-api/internal/cache"
 	"omniforge-api/internal/config"
 	"omniforge-api/internal/database"
 	"omniforge-api/internal/router"
@@ -30,7 +31,17 @@ func main() {
 		log.Fatal(err)
 	}
 	defer sqlDB.Close()
-	dependencies := app.NewDependencies(db, cfg)
+
+	redisClient, err := cache.ConnectRedis(cfg.RedisAddr)
+	
+	if err != nil {
+		log.Fatal(err)
+	}
+
+		defer redisClient.Close()
+
+	log.Println("Redis connected successfully")
+	dependencies := app.NewDependencies(db, cfg,redisClient)
 
 	appRouter := router.New(dependencies)
 
