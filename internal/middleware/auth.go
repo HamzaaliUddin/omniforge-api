@@ -5,13 +5,23 @@ import (
 	"strings"
 
 	"omniforge-api/internal/auth"
+	"omniforge-api/internal/cache"
 	"omniforge-api/internal/requestcontext"
 	"omniforge-api/internal/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
-func Auth(jwtSecret string) gin.HandlerFunc {
+const (
+	MessageTokenRevoked             = "token has been revoked"
+	MessageAuthenticationUnavailable = "authentication service unavailable"
+)
+
+func Auth(
+	jwtSecret string,
+	redisClient *redis.Client,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authorization := c.GetHeader("Authorization")
 
@@ -40,8 +50,10 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
+		tokenString := parts[1]
+
 		claims, err := auth.ValidateAccessToken(
-			parts[1],
+			tokenString,
 			jwtSecret,
 		)
 
@@ -50,6 +62,32 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				MessageInvalidToken,
+			)
+			c.Abort()
+			return
+		}
+
+		blacklisted, err := cache.IsTokenBlacklisted(
+			c.Request.Context(),
+			redisClient,
+			tokenString,
+		)
+
+		if err != nil {
+			response.Error(
+				c,
+				http.StatusServiceUnavailable,
+				MessageAuthenticationUnavailable,
+			)
+			c.Abort()
+			return
+		}
+
+		if blacklisted {
+			response.Error(
+				c,
+				http.StatusUnauthorized,
+				MessageTokenRevoked,
 			)
 			c.Abort()
 			return

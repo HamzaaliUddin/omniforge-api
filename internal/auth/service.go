@@ -1,27 +1,36 @@
 package auth
 
 import (
+	"context"
 	"strings"
+	"time"
 
+	"omniforge-api/internal/cache"
 	"omniforge-api/internal/role"
 	"omniforge-api/internal/user"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 type Service struct {
 	userRepository *user.Repository
 	roleRepository *role.Repository
-	jwtSecret      string
+	redisClient     *redis.Client
+	jwtSecret       string
 }
 
 func NewService(
 	userRepository *user.Repository,
 	roleRepository *role.Repository,
+	redisClient *redis.Client,
 	jwtSecret string,
 ) *Service {
 	return &Service{
 		userRepository: userRepository,
 		roleRepository: roleRepository,
-		jwtSecret:      jwtSecret,
+		redisClient:     redisClient,
+		jwtSecret:       jwtSecret,
 	}
 }
 
@@ -98,4 +107,41 @@ func (s *Service) Login(input LoginRequest) (*LoginResult, error) {
 		Role:        existingUser.Role.Name,
 		AccessToken: accessToken,
 	}, nil
+}
+
+func (s *Service) Logout(
+	ctx context.Context,
+	tokenString string,
+) error {
+	claims := &jwt.RegisteredClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		func(token *jwt.Token) (any, error) {
+			return []byte(s.jwtSecret), nil
+		},
+		jwt.WithValidMethods([]string{"HS256"}),
+	)
+
+	if err != nil || !token.Valid {
+		return ErrInvalidToken
+	}
+
+	if claims.ExpiresAt == nil {
+		return ErrInvalidToken
+	}
+
+	ttl := time.Until(claims.ExpiresAt.Time)
+
+	if ttl <= 0 {
+		return ErrInvalidToken
+	}
+
+	return cache.BlacklistToken(
+		ctx,
+		s.redisClient,
+		tokenString,
+		ttl,
+	)
 }

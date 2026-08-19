@@ -30,7 +30,10 @@ func New(deps *app.Dependencies) *gin.Engine {
 
 	protectedRoutes := api.Group("")
 	protectedRoutes.Use(
-		middleware.Auth(deps.JWTSecret),
+		middleware.Auth(
+		deps.JWTSecret,
+		deps.Redis,
+		),
 	)
 
 	user.RegisterRoutes(
@@ -40,7 +43,10 @@ func New(deps *app.Dependencies) *gin.Engine {
 
 	adminRoutes := api.Group("/admin")
 	adminRoutes.Use(
-		middleware.Auth(deps.JWTSecret),
+		middleware.Auth(
+		deps.JWTSecret,
+		deps.Redis,
+		),
 		middleware.RequireRole("admin"),
 	)
 

@@ -27,6 +27,7 @@ func NewDependencies(db *gorm.DB,cfg *config.Config,redisClient *redis.Client) *
 	authService := auth.NewService(
 		userRepository,
 		roleRepository,
+		redisClient,
 		cfg.JWTSecret,
 	)
 

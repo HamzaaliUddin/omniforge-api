@@ -3,6 +3,8 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"strings"
+
 	"omniforge-api/internal/response"
 
 	"github.com/gin-gonic/gin"
@@ -97,5 +99,61 @@ func (h *Handler) Login(c *gin.Context) {
 		http.StatusOK,
 		MessageLoginSuccess,
 		result,
+	)
+}
+
+func (h *Handler) Logout(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			MessageTokenRequired,
+		)
+		return
+	}
+
+	token := strings.TrimSpace(
+		strings.TrimPrefix(authHeader, "Bearer "),
+	)
+
+	if token == "" {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			MessageTokenRequired,
+		)
+		return
+	}
+
+	err := h.service.Logout(
+		c.Request.Context(),
+		token,
+	)
+
+	if err != nil {
+		if errors.Is(err, ErrInvalidToken) {
+			response.Error(
+				c,
+				http.StatusUnauthorized,
+				MessageInvalidToken,
+			)
+			return
+		}
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			MessageLogoutFailed,
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		http.StatusOK,
+		MessageLogoutSuccess,
+		nil,
 	)
 }

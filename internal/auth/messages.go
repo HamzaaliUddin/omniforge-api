@@ -10,4 +10,8 @@ const (
 	MessageLoginFailed        = "Unable to login"
 	MessageUnauthorized       = "Authentication required"
 	MessageInvalidToken       = "Invalid or expired access token"
+	MessageLogoutSuccess       = "logged out successfully"
+	MessageTokenRequired       = "authorization token is required"
+	MessageLogoutFailed        = "failed to logout"
+	
 )
