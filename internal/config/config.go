@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	AppPort string
-	AppEnv  string
+	AppPort     string
+	AppEnv      string
+	DatabaseURL string
 }
 
 func Load() *Config {
@@ -18,7 +19,8 @@ func Load() *Config {
 	}
 
 	return &Config{
-		AppPort: os.Getenv("APP_PORT"),
-		AppEnv:  os.Getenv("APP_ENV"),
+		AppPort:     os.Getenv("APP_PORT"),
+		AppEnv:      os.Getenv("APP_ENV"),
+		DatabaseURL: os.Getenv("DATABASE_URL"),
 	}
 }
