@@ -11,5 +11,9 @@ func Run(db *gorm.DB) error {
 		return err
 	}
 
+	if err := SeedAdmin(db); err != nil {
+		return err
+	}
+
 	return nil
 }

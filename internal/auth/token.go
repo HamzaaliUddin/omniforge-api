@@ -37,3 +37,28 @@ func GenerateAccessToken(
 
 	return token.SignedString([]byte(secret))
 }
+
+func ValidateAccessToken(
+	tokenString string,
+	secret string,
+) (*TokenClaims, error) {
+	claims := &TokenClaims{}
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		func(token *jwt.Token) (any, error) {
+			return []byte(secret), nil
+		},
+		jwt.WithValidMethods([]string{
+			jwt.SigningMethodHS256.Alg(),
+		}),
+		jwt.WithExpirationRequired(),
+	)
+
+	if err != nil || !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	return claims, nil
+}

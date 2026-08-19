@@ -8,4 +8,6 @@ const (
 	MessageEmailExists        = "Email already exists"
 	MessageRegisterFailed     = "Unable to register user"
 	MessageLoginFailed        = "Unable to login"
+	MessageUnauthorized       = "Authentication required"
+	MessageInvalidToken       = "Invalid or expired access token"
 )

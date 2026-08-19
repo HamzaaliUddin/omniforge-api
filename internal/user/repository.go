@@ -35,6 +35,36 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
+func (r *Repository) FindByID(id uint) (*User, error) {
+	var user User
+
+	err := r.db.
+		Preload("Role").
+		First(&user, id).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *Repository) FindAll() ([]User, error) {
+	var users []User
+
+	if err := r.db.
+		Preload("Role").
+		Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (r *Repository) Create(user *User) error {
 	return r.db.Create(user).Error
 }
