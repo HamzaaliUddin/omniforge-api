@@ -6,5 +6,7 @@ func RegisterRoutes(
 	router *gin.RouterGroup,
 	handler *Handler,
 ) {
-	router.GET("/users", handler.GetUsers)
+	adminRoutes := router.Group("/admin")
+
+	adminRoutes.GET("/users", handler.GetUsers)
 }

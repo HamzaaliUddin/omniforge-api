@@ -22,7 +22,8 @@ func (r *Repository) FindByEmail(email string) (*User, error) {
 	err := r.db.
 		Preload("Role").
 		Where("email = ?", email).
-		First(&user).Error
+		First(&user).
+		Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -40,7 +41,8 @@ func (r *Repository) FindByID(id uint) (*User, error) {
 
 	err := r.db.
 		Preload("Role").
-		First(&user, id).Error
+		First(&user, id).
+		Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -58,7 +60,8 @@ func (r *Repository) FindAll() ([]User, error) {
 
 	if err := r.db.
 		Preload("Role").
-		Find(&users).Error; err != nil {
+		Find(&users).
+		Error; err != nil {
 		return nil, err
 	}
 
@@ -67,4 +70,26 @@ func (r *Repository) FindAll() ([]User, error) {
 
 func (r *Repository) Create(user *User) error {
 	return r.db.Create(user).Error
+}
+
+func (r *Repository) Update(user *User) error {
+	if err := r.db.Save(user).Error; err != nil {
+		return err
+	}
+
+	if err := r.db.
+		Preload("Role").
+		First(user, user.ID).
+		Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) Delete(id uint) error {
+	return r.db.Delete(
+		&User{},
+		id,
+	).Error
 }

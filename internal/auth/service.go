@@ -46,7 +46,7 @@ func (s *Service) Register(input RegisterRequest) (*user.User, error) {
 		return nil, ErrEmailAlreadyExists
 	}
 
-	defaultRole, err := s.roleRepository.FindByName("user")
+	defaultRole, err := s.roleRepository.FindByName(role.NameUser)
 	if err != nil {
 		return nil, err
 	}

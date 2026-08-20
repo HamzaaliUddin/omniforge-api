@@ -8,8 +8,8 @@ import (
 
 func SeedRoles(db *gorm.DB) error {
 	roles := []role.Role{
-		{Name: "admin"},
-		{Name: "user"},
+		{Name: role.NameAdmin},
+		{Name: role.NameUser},
 	}
 
 	for _, item := range roles {

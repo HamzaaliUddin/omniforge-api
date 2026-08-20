@@ -13,7 +13,7 @@ import (
 func SeedAdmin(db *gorm.DB) error {
 	var adminRole role.Role
 
-	if err := db.Where("name = ?", "admin").First(&adminRole).Error; err != nil {
+	if err := db.Where("name = ?", role.NameAdmin).First(&adminRole).Error; err != nil {
 		return err
 	}
 

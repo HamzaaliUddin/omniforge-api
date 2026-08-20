@@ -11,17 +11,19 @@ import (
 )
 
 type Handler struct {
-	userService *Service
+	service *Service
 }
 
-func NewHandler(userService *Service) *Handler {
+func NewHandler(service *Service) *Handler {
 	return &Handler{
-		userService: userService,
+		service: service,
 	}
 }
 
 func (h *Handler) Me(c *gin.Context) {
-	userIDValue, exists := c.Get(requestcontext.UserID)
+	userIDValue, exists := c.Get(
+		requestcontext.UserID,
+	)
 
 	if !exists {
 		response.Error(
@@ -42,7 +44,11 @@ func (h *Handler) Me(c *gin.Context) {
 		return
 	}
 
-	result, err := h.userService.GetProfile(userID)
+	result, err := h.service.GetMe(
+		c.Request.Context(),
+		userID,
+	)
+
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			response.Error(
@@ -66,5 +72,136 @@ func (h *Handler) Me(c *gin.Context) {
 		http.StatusOK,
 		MessageProfileSuccess,
 		result,
+	)
+}
+
+func (h *Handler) UpdateMe(c *gin.Context) {
+	userIDValue, exists := c.Get(
+		requestcontext.UserID,
+	)
+
+	if !exists {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			MessageAuthenticationRequired,
+		)
+		return
+	}
+
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			MessageAuthenticationRequired,
+		)
+		return
+	}
+
+	var input UpdateMeRequest
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessageInvalidRequest,
+		)
+		return
+	}
+
+	result, err := h.service.UpdateMe(
+		c.Request.Context(),
+		userID,
+		input,
+	)
+
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			response.Error(
+				c,
+				http.StatusNotFound,
+				MessageUserNotFound,
+			)
+			return
+		}
+
+		if errors.Is(err, ErrEmailAlreadyExists) {
+			response.Error(
+				c,
+				http.StatusConflict,
+				MessageEmailExists,
+			)
+			return
+		}
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			MessageUpdateFailed,
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		http.StatusOK,
+		MessageUpdateSuccess,
+		result,
+	)
+}
+
+func (h *Handler) DeleteMe(c *gin.Context) {
+	userIDValue, exists := c.Get(
+		requestcontext.UserID,
+	)
+
+	if !exists {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			MessageAuthenticationRequired,
+		)
+		return
+	}
+
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		response.Error(
+			c,
+			http.StatusUnauthorized,
+			MessageAuthenticationRequired,
+		)
+		return
+	}
+
+	err := h.service.DeleteMe(
+		c.Request.Context(),
+		userID,
+	)
+
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			response.Error(
+				c,
+				http.StatusNotFound,
+				MessageUserNotFound,
+			)
+			return
+		}
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			MessageDeleteFailed,
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		http.StatusOK,
+		MessageDeleteSuccess,
+		nil,
 	)
 }

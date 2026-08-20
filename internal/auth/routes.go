@@ -2,11 +2,22 @@ package auth
 
 import "github.com/gin-gonic/gin"
 
-func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
+func RegisterPublicRoutes(
+	router *gin.RouterGroup,
+	handler *Handler,
+) {
 	authRoutes := router.Group("/auth")
 
 	authRoutes.POST("/register", handler.Register)
 	authRoutes.POST("/login", handler.Login)
-	authRoutes.POST("/logout", handler.Logout)
 	authRoutes.POST("/refresh", handler.Refresh)
+}
+
+func RegisterProtectedRoutes(
+	router *gin.RouterGroup,
+	handler *Handler,
+) {
+	authRoutes := router.Group("/auth")
+
+	authRoutes.POST("/logout", handler.Logout)
 }

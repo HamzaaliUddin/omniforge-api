@@ -13,7 +13,7 @@ import (
 func SeedUsers(db *gorm.DB) error {
 	var userRole role.Role
 
-	if err := db.Where("name = ?", "user").First(&userRole).Error; err != nil {
+	if err := db.Where("name = ?",role.NameUser).First(&userRole).Error; err != nil {
 		return err
 	}
 

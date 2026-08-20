@@ -33,7 +33,7 @@ func NewDependencies(db *gorm.DB,cfg *config.Config,redisClient *redis.Client) *
 
 	authHandler := auth.NewHandler(authService)
 
-	userService := user.NewService(userRepository)
+	userService := user.NewService(userRepository,redisClient)
 	userHandler := user.NewHandler(userService)
 
 	adminService := admin.NewService(userRepository)

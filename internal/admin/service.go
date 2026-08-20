@@ -12,13 +12,13 @@ func NewService(userRepository *user.Repository) *Service {
 	}
 }
 
-func (s *Service) GetUsers() ([]user.Response, error) {
+func (s *Service) GetUsers() ([]user.UserResponse, error) {
 	users, err := s.userRepository.FindAll()
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]user.Response, 0, len(users))
+	result := make([]user.UserResponse, 0, len(users))
 
 	for i := range users {
 		result = append(

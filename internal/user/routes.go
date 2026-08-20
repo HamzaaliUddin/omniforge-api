@@ -9,4 +9,6 @@ func RegisterRoutes(
 	userRoutes := router.Group("/users")
 
 	userRoutes.GET("/me", handler.Me)
+	userRoutes.PATCH("/me", handler.UpdateMe)
+	userRoutes.DELETE("/me", handler.DeleteMe)
 }
