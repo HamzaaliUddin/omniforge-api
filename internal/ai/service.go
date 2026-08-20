@@ -18,9 +18,16 @@ func (s *Service) GenerateText(
 	ctx context.Context,
 	input GenerateTextRequest,
 ) (*GenerateTextResponse, error) {
+	providerInput := ProviderInput{
+		Prompt: input.Prompt,
+		SystemPrompt: GetSystemPrompt(
+			input.PromptType,
+		),
+	}
+
 	text, err := s.provider.GenerateText(
 		ctx,
-		input.Prompt,
+		providerInput,
 	)
 
 	if err != nil {
@@ -37,19 +44,34 @@ func (s *Service) StreamText(
 	input GenerateTextRequest,
 	onDelta func(string) error,
 ) error {
+	providerInput := ProviderInput{
+		Prompt: input.Prompt,
+		SystemPrompt: GetSystemPrompt(
+			input.PromptType,
+		),
+	}
+
 	return s.provider.StreamText(
 		ctx,
-		input.Prompt,
+		providerInput,
 		onDelta,
 	)
 }
+
 func (s *Service) GenerateStructured(
 	ctx context.Context,
 	input GenerateTextRequest,
 ) (*StructuredTextResponse, error) {
+	providerInput := ProviderInput{
+		Prompt: input.Prompt,
+		SystemPrompt: GetSystemPrompt(
+			input.PromptType,
+		),
+	}
+
 	result, err := s.provider.GenerateStructured(
 		ctx,
-		input.Prompt,
+		providerInput,
 	)
 
 	if err != nil {

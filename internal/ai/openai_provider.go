@@ -28,14 +28,19 @@ func NewOpenAIProvider(
 
 func (p *OpenAIProvider) GenerateText(
 	ctx context.Context,
-	prompt string,
+	input ProviderInput,
 ) (string, error) {
 	result, err := p.client.Responses.New(
 		ctx,
 		responses.ResponseNewParams{
 			Model: openai.ChatModelGPT5_2,
+			Instructions: openai.String(
+				input.SystemPrompt,
+			),
 			Input: responses.ResponseNewParamsInputUnion{
-				OfString: openai.String(prompt),
+				OfString: openai.String(
+					input.Prompt,
+				),
 			},
 		},
 	)
@@ -51,15 +56,20 @@ func (p *OpenAIProvider) GenerateText(
 }
 func (p *OpenAIProvider) StreamText(
 	ctx context.Context,
-	prompt string,
+	input ProviderInput,
 	onDelta func(string) error,
 ) error {
 	stream := p.client.Responses.NewStreaming(
 		ctx,
 		responses.ResponseNewParams{
 			Model: openai.ChatModelGPT5_2,
+			Instructions: openai.String(
+				input.SystemPrompt,
+			),
 			Input: responses.ResponseNewParamsInputUnion{
-				OfString: openai.String(prompt),
+				OfString: openai.String(
+					input.Prompt,
+				),
 			},
 		},
 	)
@@ -87,7 +97,7 @@ func (p *OpenAIProvider) StreamText(
 }
 func (p *OpenAIProvider) GenerateStructured(
 	ctx context.Context,
-	prompt string,
+	input ProviderInput,
 ) (*StructuredTextResponse, error) {
 	schema, err := GenerateSchema[StructuredTextResponse]()
 	if err != nil {
@@ -98,8 +108,13 @@ func (p *OpenAIProvider) GenerateStructured(
 		ctx,
 		responses.ResponseNewParams{
 			Model: openai.ChatModelGPT5_2,
+			Instructions: openai.String(
+				input.SystemPrompt,
+			),
 			Input: responses.ResponseNewParamsInputUnion{
-				OfString: openai.String(prompt),
+				OfString: openai.String(
+					input.Prompt,
+				),
 			},
 			Text: responses.ResponseTextConfigParam{
 				Format: responses.ResponseFormatTextConfigUnionParam{

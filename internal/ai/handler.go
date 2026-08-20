@@ -34,38 +34,45 @@ func (h *Handler) GenerateText(c *gin.Context) {
 	}
 
 	if err := ValidateGenerateTextRequest(&input); err != nil {
-		switch {
-		case errors.Is(err, ErrPromptRequired):
-			response.Error(
-				c,
-				http.StatusBadRequest,
-				MessagePromptRequired,
-			)
+	switch {
+	case errors.Is(err, ErrPromptRequired):
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessagePromptRequired,
+		)
 
-		case errors.Is(err, ErrPromptTooLong):
-			response.Error(
-				c,
-				http.StatusBadRequest,
-				MessagePromptTooLong,
-			)
+	case errors.Is(err, ErrPromptTooLong):
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessagePromptTooLong,
+		)
 
-		case errors.Is(err, ErrInvalidOutputFormat):
-			response.Error(
-				c,
-				http.StatusBadRequest,
-				MessageInvalidOutputFormat,
-			)
+	case errors.Is(err, ErrInvalidOutputFormat):
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessageInvalidOutputFormat,
+		)
 
-		case errors.Is(err, ErrStructuredStreamingNotValid):
-			response.Error(
-				c,
-				http.StatusBadRequest,
-				MessageStructuredStreamInvalid,
-			)
-		}
+	case errors.Is(err, ErrInvalidPromptType):
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessageInvalidPromptType,
+		)
 
-		return
+	case errors.Is(err, ErrStructuredStreamingNotValid):
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessageStructuredStreamInvalid,
+		)
 	}
+
+	return
+}
 
 	if input.Stream {
 		h.streamText(c, input)

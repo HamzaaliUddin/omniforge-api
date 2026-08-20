@@ -11,6 +11,7 @@ var (
 	ErrPromptRequired              = errors.New("prompt is required")
 	ErrPromptTooLong               = errors.New("prompt is too long")
 	ErrInvalidOutputFormat         = errors.New("invalid output format")
+	ErrInvalidPromptType           = errors.New("invalid prompt type")
 	ErrStructuredStreamingNotValid = errors.New("structured output cannot be streamed")
 
 	ErrStructuredTitleRequired = errors.New(
@@ -30,6 +31,8 @@ func ValidateGenerateTextRequest(
 	input *GenerateTextRequest,
 ) error {
 	input.Prompt = strings.TrimSpace(input.Prompt)
+	input.OutputFormat = strings.TrimSpace(input.OutputFormat)
+	input.PromptType = strings.TrimSpace(input.PromptType)
 
 	if input.Prompt == "" {
 		return ErrPromptRequired
@@ -46,6 +49,16 @@ func ValidateGenerateTextRequest(
 	if input.OutputFormat != OutputFormatText &&
 		input.OutputFormat != OutputFormatStructured {
 		return ErrInvalidOutputFormat
+	}
+
+	if input.PromptType == "" {
+		input.PromptType = PromptTypeDefault
+	}
+
+	if input.PromptType != PromptTypeDefault &&
+		input.PromptType != PromptTypeTechnical &&
+		input.PromptType != PromptTypeSummary {
+		return ErrInvalidPromptType
 	}
 
 	if input.Stream &&

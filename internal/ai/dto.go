@@ -4,6 +4,7 @@ type GenerateTextRequest struct {
 	Prompt       string `json:"prompt"`
 	Stream       bool   `json:"stream"`
 	OutputFormat string `json:"output_format"`
+	PromptType   string `json:"prompt_type"`
 }
 
 type GenerateTextResponse struct {
