@@ -75,7 +75,10 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.Login(input)
+	result, err := h.service.Login(
+	c.Request.Context(),
+	input,
+	)
 	if err != nil {
 		if errors.Is(err, ErrInvalidCredentials) {
 			response.Error(
@@ -103,22 +106,25 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) Logout(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
+	var input LogoutRequest
 
-	if !strings.HasPrefix(authHeader, "Bearer ") {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		response.Error(
 			c,
-			http.StatusUnauthorized,
-			MessageTokenRequired,
+			http.StatusBadRequest,
+			MessageInvalidRequest,
 		)
 		return
 	}
 
-	token := strings.TrimSpace(
-		strings.TrimPrefix(authHeader, "Bearer "),
-	)
+	authorization := c.GetHeader("Authorization")
 
-	if token == "" {
+	parts := strings.SplitN(authorization, " ", 2)
+
+	if len(parts) != 2 ||
+		!strings.EqualFold(parts[0], "Bearer") ||
+		parts[1] == "" {
+
 		response.Error(
 			c,
 			http.StatusUnauthorized,
@@ -129,7 +135,8 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	err := h.service.Logout(
 		c.Request.Context(),
-		token,
+		parts[1],
+		input.RefreshToken,
 	)
 
 	if err != nil {
@@ -155,5 +162,47 @@ func (h *Handler) Logout(c *gin.Context) {
 		http.StatusOK,
 		MessageLogoutSuccess,
 		nil,
+	)
+}
+func (h *Handler) Refresh(c *gin.Context) {
+	var input RefreshRequest
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		response.Error(
+			c,
+			http.StatusBadRequest,
+			MessageInvalidRequest,
+		)
+		return
+	}
+
+	result, err := h.service.Refresh(
+		c.Request.Context(),
+		input.RefreshToken,
+	)
+
+	if err != nil {
+		if errors.Is(err, ErrInvalidRefreshToken) {
+			response.Error(
+				c,
+				http.StatusUnauthorized,
+				MessageInvalidRefresh,
+			)
+			return
+		}
+
+		response.Error(
+			c,
+			http.StatusInternalServerError,
+			MessageRefreshFailed,
+		)
+		return
+	}
+
+	response.Success(
+		c,
+		http.StatusOK,
+		MessageRefreshSuccess,
+		result,
 	)
 }

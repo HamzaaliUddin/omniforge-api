@@ -75,7 +75,10 @@ func (s *Service) Register(input RegisterRequest) (*user.User, error) {
 	return newUser, nil
 }
 
-func (s *Service) Login(input LoginRequest) (*LoginResult, error) {
+func (s *Service) Login(
+	ctx context.Context,
+	input LoginRequest,
+) (*LoginResult, error) {
 	email := strings.ToLower(strings.TrimSpace(input.Email))
 
 	existingUser, err := s.userRepository.FindByEmail(email)
@@ -87,7 +90,10 @@ func (s *Service) Login(input LoginRequest) (*LoginResult, error) {
 		return nil, ErrInvalidCredentials
 	}
 
-	if err := ComparePassword(existingUser.PasswordHash, input.Password); err != nil {
+	if err := ComparePassword(
+		existingUser.PasswordHash,
+		input.Password,
+	); err != nil {
 		return nil, ErrInvalidCredentials
 	}
 
@@ -100,28 +106,52 @@ func (s *Service) Login(input LoginRequest) (*LoginResult, error) {
 		return nil, err
 	}
 
+	refreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	err = cache.StoreRefreshToken(
+		ctx,
+		s.redisClient,
+		refreshToken,
+		cache.RefreshSession{
+			UserID: existingUser.ID,
+			Role:   existingUser.Role.Name,
+		},
+		RefreshTokenTTL,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &LoginResult{
-		ID:          existingUser.ID,
-		Name:        existingUser.Name,
-		Email:       existingUser.Email,
-		Role:        existingUser.Role.Name,
-		AccessToken: accessToken,
+		ID:           existingUser.ID,
+		Name:         existingUser.Name,
+		Email:        existingUser.Email,
+		Role:         existingUser.Role.Name,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
 func (s *Service) Logout(
 	ctx context.Context,
-	tokenString string,
+	accessToken string,
+	refreshToken string,
 ) error {
 	claims := &jwt.RegisteredClaims{}
 
 	token, err := jwt.ParseWithClaims(
-		tokenString,
+		accessToken,
 		claims,
 		func(token *jwt.Token) (any, error) {
 			return []byte(s.jwtSecret), nil
 		},
-		jwt.WithValidMethods([]string{"HS256"}),
+		jwt.WithValidMethods([]string{
+			jwt.SigningMethodHS256.Alg(),
+		}),
+		jwt.WithExpirationRequired(),
 	)
 
 	if err != nil || !token.Valid {
@@ -138,10 +168,84 @@ func (s *Service) Logout(
 		return ErrInvalidToken
 	}
 
-	return cache.BlacklistToken(
+	if err := cache.DeleteRefreshToken(
 		ctx,
 		s.redisClient,
-		tokenString,
+		refreshToken,
+	); err != nil {
+		return err
+	}
+
+	if err := cache.BlacklistToken(
+		ctx,
+		s.redisClient,
+		accessToken,
 		ttl,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+func (s *Service) Refresh(
+	ctx context.Context,
+	refreshToken string,
+) (*RefreshResult, error) {
+	session, found, err := cache.GetRefreshSession(
+		ctx,
+		s.redisClient,
+		refreshToken,
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, ErrInvalidRefreshToken
+	}
+
+	accessToken, err := GenerateAccessToken(
+		session.UserID,
+		session.Role,
+		s.jwtSecret,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	newRefreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	err = cache.StoreRefreshToken(
+		ctx,
+		s.redisClient,
+		newRefreshToken,
+		*session,
+		RefreshTokenTTL,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cache.DeleteRefreshToken(
+		ctx,
+		s.redisClient,
+		refreshToken,
+	); err != nil {
+		_ = cache.DeleteRefreshToken(
+			ctx,
+			s.redisClient,
+			newRefreshToken,
+		)
+
+		return nil, err
+	}
+
+	return &RefreshResult{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
 }

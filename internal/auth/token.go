@@ -1,10 +1,17 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+)
+
+const (
+	AccessTokenTTL  = 15 * time.Minute
+	RefreshTokenTTL = 30 * 24 * time.Hour
 )
 
 type TokenClaims struct {
@@ -24,9 +31,14 @@ func GenerateAccessToken(
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   strconv.FormatUint(uint64(userID), 10),
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(24 * time.Hour)),
+			Subject: strconv.FormatUint(
+				uint64(userID),
+				10,
+			),
+			IssuedAt: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(
+				now.Add(AccessTokenTTL),
+			),
 		},
 	}
 
@@ -35,7 +47,9 @@ func GenerateAccessToken(
 		claims,
 	)
 
-	return token.SignedString([]byte(secret))
+	return token.SignedString(
+		[]byte(secret),
+	)
 }
 
 func ValidateAccessToken(
@@ -61,4 +75,16 @@ func ValidateAccessToken(
 	}
 
 	return claims, nil
+}
+
+func GenerateRefreshToken() (string, error) {
+	tokenBytes := make([]byte, 32)
+
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(
+		tokenBytes,
+	), nil
 }
