@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"omniforge-api/internal/admin"
+	"omniforge-api/internal/ai"
 	"omniforge-api/internal/app"
 	"omniforge-api/internal/auth"
 	"omniforge-api/internal/middleware"
@@ -62,6 +63,11 @@ func New(deps *app.Dependencies) *gin.Engine {
 		adminRoutes,
 		deps.AdminHandler,
 	)
+
+	ai.RegisterRoutes(
+	protected,
+	deps.AIHandler,
+)
 
 	return router
 }

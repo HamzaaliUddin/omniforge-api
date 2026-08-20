@@ -2,8 +2,8 @@ package app
 
 import (
 	"omniforge-api/internal/admin"
+	"omniforge-api/internal/ai"
 	"omniforge-api/internal/auth"
-	"omniforge-api/internal/config"
 	"omniforge-api/internal/role"
 	"omniforge-api/internal/user"
 
@@ -12,39 +12,63 @@ import (
 )
 
 type Dependencies struct {
-	DB *gorm.DB
-	Redis *redis.Client
 	AuthHandler  *auth.Handler
 	UserHandler  *user.Handler
 	AdminHandler *admin.Handler
-	JWTSecret    string
+	AIHandler    *ai.Handler
+
+	Redis     *redis.Client
+	JWTSecret string
 }
 
-func NewDependencies(db *gorm.DB,cfg *config.Config,redisClient *redis.Client) *Dependencies {
+func NewDependencies(
+	db *gorm.DB,
+	redisClient *redis.Client,
+	jwtSecret string,
+	openAIAPIKey string,
+) *Dependencies {
 	userRepository := user.NewRepository(db)
 	roleRepository := role.NewRepository(db)
+
+	userService := user.NewService(
+		userRepository,
+		redisClient,
+	)
 
 	authService := auth.NewService(
 		userRepository,
 		roleRepository,
 		redisClient,
-		cfg.JWTSecret,
+		jwtSecret,
 	)
 
-	authHandler := auth.NewHandler(authService)
+	adminService := admin.NewService(
+		userRepository,
+	)
 
-	userService := user.NewService(userRepository,redisClient)
-	userHandler := user.NewHandler(userService)
+	openAIProvider := ai.NewOpenAIProvider(
+		openAIAPIKey,
+	)
 
-	adminService := admin.NewService(userRepository)
-	adminHandler := admin.NewHandler(adminService)
+	aiService := ai.NewService(
+		openAIProvider,
+	)
 
-return &Dependencies{
-	DB:    db,
-	Redis: redisClient,
-	AuthHandler:  authHandler,
-	UserHandler:  userHandler,
-	AdminHandler: adminHandler,
-	JWTSecret:    cfg.JWTSecret,
-}
+	return &Dependencies{
+		AuthHandler: auth.NewHandler(
+			authService,
+		),
+		UserHandler: user.NewHandler(
+			userService,
+		),
+		AdminHandler: admin.NewHandler(
+			adminService,
+		),
+		AIHandler: ai.NewHandler(
+			aiService,
+		),
+
+		Redis:     redisClient,
+		JWTSecret: jwtSecret,
+	}
 }

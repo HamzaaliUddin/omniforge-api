@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	AppPort     string
-	AppEnv      string
-	DatabaseURL string
-	JWTSecret   string
-	RedisAddr   string
+	AppPort      string
+	AppEnv       string
+	DatabaseURL  string
+	JWTSecret    string
+	RedisAddr    string
+	OpenAIAPIKey string
 }
 
 func Load() *Config {
@@ -26,5 +27,6 @@ func Load() *Config {
 	DatabaseURL: os.Getenv("DATABASE_URL"),
 	JWTSecret:   os.Getenv("JWT_SECRET"),
 	RedisAddr:   os.Getenv("REDIS_ADDR"),
+	OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
 }
 }

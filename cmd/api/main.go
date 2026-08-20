@@ -41,9 +41,14 @@ func main() {
 		defer redisClient.Close()
 
 	log.Println("Redis connected successfully")
-	dependencies := app.NewDependencies(db, cfg,redisClient)
+		deps := app.NewDependencies(
+			db,
+			redisClient,
+			cfg.JWTSecret,
+			cfg.OpenAIAPIKey,
+		)
 
-	appRouter := router.New(dependencies)
+	appRouter := router.New(deps)
 
 	if err := appRouter.Run(":" + cfg.AppPort); err != nil {
 		log.Fatal(err)
